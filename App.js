@@ -40,13 +40,16 @@ export default function App() {
     }
   }, [seleccionadas, cartas]);
 
-  function seleccionar(indice) {
-    if (bloqueado) return;
-    if (seleccionadas.includes(indice)) return;
-    if (emparejadas.includes(cartas[indice].emoji)) return;
-    if (seleccionadas.length === 2) return;
-    setSeleccionadas((prev) => [...prev, indice]);
-  }
+function seleccionar(indice) {
+  if (bloqueado) return;
+  if (emparejadas.includes(cartas[indice].emoji)) return;
+
+  setSeleccionadas((prev) => {
+    if (prev.length >= 2) return prev;
+    if (prev.includes(indice)) return prev;
+    return [...prev, indice];
+  });
+}
 
   function reiniciar() {
     setCartas(generarMazo());
