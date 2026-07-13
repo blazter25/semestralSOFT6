@@ -52,17 +52,32 @@ export default function JuegoScreen() {
   // SENSOR: acelerómetro. Al agitar el teléfono se reparten cartas nuevas.
   const ultimoReinicio = useRef(0);
   useEffect(() => {
-    Accelerometer.setUpdateInterval(200);
-    const sub = Accelerometer.addListener(({ x, y, z }) => {
-      const fuerza = Math.sqrt(x * x + y * y + z * z);
-      const ahora = Date.now();
-      // Evita reinicios repetidos: solo uno por segundo.
-      if (fuerza > UMBRAL_SACUDIDA && ahora - ultimoReinicio.current > 1000) {
-        ultimoReinicio.current = ahora;
-        reiniciar();
+    let activo = true;
+    let sub;
+    // Se activa solo si el dispositivo tiene acelerómetro (el celular sí; el
+    // navegador web no, por eso se protege para no romper la pantalla).
+    (async () => {
+      try {
+        const disponible = await Accelerometer.isAvailableAsync();
+        if (!disponible || !activo) return;
+        Accelerometer.setUpdateInterval(200);
+        sub = Accelerometer.addListener(({ x, y, z }) => {
+          const fuerza = Math.sqrt(x * x + y * y + z * z);
+          const ahora = Date.now();
+          // Evita reinicios repetidos: solo uno por segundo.
+          if (fuerza > UMBRAL_SACUDIDA && ahora - ultimoReinicio.current > 1000) {
+            ultimoReinicio.current = ahora;
+            reiniciar();
+          }
+        });
+      } catch (e) {
+        console.warn('Acelerómetro no disponible:', e);
       }
-    });
-    return () => sub.remove();
+    })();
+    return () => {
+      activo = false;
+      if (sub) sub.remove();
+    };
   }, []);
 
   function seleccionar(indice) {
